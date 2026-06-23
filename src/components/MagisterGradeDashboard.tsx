@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, ExternalLink, KeyRound, Loader2, RefreshCw } from "lucide-react";
+import { BookOpen, Copy, ExternalLink, KeyRound, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Accordion,
@@ -18,6 +19,7 @@ import {
 import {
   createMagisterConnectorBookmarklet,
   listenForMagisterConnector,
+  parseMagisterConnectorJson,
 } from "@/lib/magisterConnector";
 
 export function MagisterGradeDashboard() {
@@ -30,12 +32,13 @@ export function MagisterGradeDashboard() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [connectorHref, setConnectorHref] = useState("#");
+  const [bookmarklet, setBookmarklet] = useState("");
+  const [pastedJson, setPastedJson] = useState("");
 
   const courseGroups = useMemo(() => buildCourseGroups(grades), [grades]);
 
   useEffect(() => {
-    setConnectorHref(createMagisterConnectorBookmarklet());
+    setBookmarklet(createMagisterConnectorBookmarklet());
   }, []);
 
   useEffect(() => {
@@ -51,6 +54,31 @@ export function MagisterGradeDashboard() {
       },
     );
   }, []);
+
+  async function copyBookmarklet() {
+    try {
+      await navigator.clipboard.writeText(bookmarklet);
+      setError("");
+      setStatus(
+        "Importlink gekopieerd. Maak een nieuwe bladwijzer in je browser, plak de link als adres en klik erop op je ingelogde Magister-pagina.",
+      );
+    } catch {
+      setError("Kopiëren mislukt. Selecteer en kopieer de link handmatig.");
+    }
+  }
+
+  function loadPastedJson() {
+    try {
+      const incoming = parseMagisterConnectorJson(pastedJson);
+      setGrades(incoming);
+      setPastedJson("");
+      setError("");
+      setStatus(`${incoming.length} cijfers geladen vanuit geplakte data.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Geplakte data is ongeldig.");
+    }
+  }
+
 
   function openMagister() {
     try {
