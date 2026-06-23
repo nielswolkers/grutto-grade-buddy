@@ -338,10 +338,24 @@ export function MagisterGradeDashboard() {
 }
 
 function normalizeMagisterUrl(value: string) {
-  const url = new URL(value.trim());
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error("Vul eerst je Magister URL in.");
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  let url: URL;
+
+  try {
+    url = new URL(withProtocol);
+  } catch {
+    throw new Error(
+      "Gebruik een geldige Magister URL, bijvoorbeeld https://jouwschool.magister.net.",
+    );
+  }
+
   if (url.protocol !== "https:") throw new Error("Gebruik een HTTPS Magister URL.");
   if (url.hostname !== "magister.net" && !url.hostname.endsWith(".magister.net")) {
     throw new Error("Gebruik een geldige magister.net URL.");
   }
+
   return `${url.protocol}//${url.hostname}`;
 }
