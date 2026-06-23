@@ -83,7 +83,7 @@ export function MagisterGradeDashboard() {
   function openMagister() {
     try {
       const url = normalizeMagisterUrl(magisterBaseUrl);
-      window.open(url, "_blank", "noopener,noreferrer");
+      window.open(url, "_blank");
       setStatus(
         "Log in via Magister of Microsoft. Gebruik daarna de importlink op de Magister-pagina.",
       );
