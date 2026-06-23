@@ -154,25 +154,46 @@ export function MagisterGradeDashboard() {
                 Open Magister
               </Button>
 
-              <a
-                href={connectorHref}
-                draggable
-                className="flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
-                onClick={(e) => {
-                  if (connectorHref === "#") e.preventDefault();
-                }}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={copyBookmarklet}
+                disabled={!bookmarklet}
+                className="w-full gap-2"
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Importlink voor Magister
-              </a>
+                <Copy className="h-4 w-4" />
+                Kopieer importlink
+              </Button>
 
               <p className="text-xs text-muted-foreground">
-                Sleep de importlink naar je bladwijzerbalk of bookmark de link. Open
-                Magister, log in (ook via Microsoft als dat verschijnt) en klik dan op
-                de bladwijzer om je cijfers naar deze app te sturen.
+                Kopieer de importlink, maak een nieuwe bladwijzer in je browser en plak
+                de link als adres. Open Magister, log in (ook via Microsoft als dat
+                verschijnt) en klik dan op de bladwijzer om je cijfers naar deze app te
+                sturen.
               </p>
             </div>
           </section>
+
+          <section className="rounded-md border bg-card p-4 space-y-3">
+            <Label htmlFor="pasted-json">Geplakte Magister data</Label>
+            <Textarea
+              id="pasted-json"
+              value={pastedJson}
+              onChange={(event) => setPastedJson(event.target.value)}
+              placeholder="Plak hier de gekopieerde cijfers als de import niet automatisch terugkomt."
+              rows={5}
+            />
+            <Button
+              type="button"
+              onClick={loadPastedJson}
+              disabled={!pastedJson.trim()}
+              className="w-full gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Toon geplakte cijfers
+            </Button>
+          </section>
+
 
           <section className="rounded-md border bg-card p-4">
             <button
