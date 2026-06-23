@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, ExternalLink, KeyRound, Loader2, RefreshCw } from "lucide-react";
+import { BookOpen, Copy, ExternalLink, KeyRound, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Accordion,
@@ -18,6 +19,7 @@ import {
 import {
   createMagisterConnectorBookmarklet,
   listenForMagisterConnector,
+  parseMagisterConnectorJson,
 } from "@/lib/magisterConnector";
 
 export function MagisterGradeDashboard() {
@@ -30,12 +32,13 @@ export function MagisterGradeDashboard() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [connectorHref, setConnectorHref] = useState("#");
+  const [bookmarklet, setBookmarklet] = useState("");
+  const [pastedJson, setPastedJson] = useState("");
 
   const courseGroups = useMemo(() => buildCourseGroups(grades), [grades]);
 
   useEffect(() => {
-    setConnectorHref(createMagisterConnectorBookmarklet());
+    setBookmarklet(createMagisterConnectorBookmarklet());
   }, []);
 
   useEffect(() => {
@@ -52,10 +55,35 @@ export function MagisterGradeDashboard() {
     );
   }, []);
 
+  async function copyBookmarklet() {
+    try {
+      await navigator.clipboard.writeText(bookmarklet);
+      setError("");
+      setStatus(
+        "Importlink gekopieerd. Maak een nieuwe bladwijzer in je browser, plak de link als adres en klik erop op je ingelogde Magister-pagina.",
+      );
+    } catch {
+      setError("Kopiëren mislukt. Selecteer en kopieer de link handmatig.");
+    }
+  }
+
+  function loadPastedJson() {
+    try {
+      const incoming = parseMagisterConnectorJson(pastedJson);
+      setGrades(incoming);
+      setPastedJson("");
+      setError("");
+      setStatus(`${incoming.length} cijfers geladen vanuit geplakte data.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Geplakte data is ongeldig.");
+    }
+  }
+
+
   function openMagister() {
     try {
       const url = normalizeMagisterUrl(magisterBaseUrl);
-      window.open(url, "_blank", "noopener,noreferrer");
+      window.open(url, "_blank");
       setStatus(
         "Log in via Magister of Microsoft. Gebruik daarna de importlink op de Magister-pagina.",
       );
@@ -126,25 +154,46 @@ export function MagisterGradeDashboard() {
                 Open Magister
               </Button>
 
-              <a
-                href={connectorHref}
-                draggable
-                className="flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
-                onClick={(e) => {
-                  if (connectorHref === "#") e.preventDefault();
-                }}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={copyBookmarklet}
+                disabled={!bookmarklet}
+                className="w-full gap-2"
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Importlink voor Magister
-              </a>
+                <Copy className="h-4 w-4" />
+                Kopieer importlink
+              </Button>
 
               <p className="text-xs text-muted-foreground">
-                Sleep de importlink naar je bladwijzerbalk of bookmark de link. Open
-                Magister, log in (ook via Microsoft als dat verschijnt) en klik dan op
-                de bladwijzer om je cijfers naar deze app te sturen.
+                Kopieer de importlink, maak een nieuwe bladwijzer in je browser en plak
+                de link als adres. Open Magister, log in (ook via Microsoft als dat
+                verschijnt) en klik dan op de bladwijzer om je cijfers naar deze app te
+                sturen.
               </p>
             </div>
           </section>
+
+          <section className="rounded-md border bg-card p-4 space-y-3">
+            <Label htmlFor="pasted-json">Geplakte Magister data</Label>
+            <Textarea
+              id="pasted-json"
+              value={pastedJson}
+              onChange={(event) => setPastedJson(event.target.value)}
+              placeholder="Plak hier de gekopieerde cijfers als de import niet automatisch terugkomt."
+              rows={5}
+            />
+            <Button
+              type="button"
+              onClick={loadPastedJson}
+              disabled={!pastedJson.trim()}
+              className="w-full gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Toon geplakte cijfers
+            </Button>
+          </section>
+
 
           <section className="rounded-md border bg-card p-4">
             <button
@@ -289,10 +338,24 @@ export function MagisterGradeDashboard() {
 }
 
 function normalizeMagisterUrl(value: string) {
-  const url = new URL(value.trim());
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error("Vul eerst je Magister URL in.");
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  let url: URL;
+
+  try {
+    url = new URL(withProtocol);
+  } catch {
+    throw new Error(
+      "Gebruik een geldige Magister URL, bijvoorbeeld https://jouwschool.magister.net.",
+    );
+  }
+
   if (url.protocol !== "https:") throw new Error("Gebruik een HTTPS Magister URL.");
   if (url.hostname !== "magister.net" && !url.hostname.endsWith(".magister.net")) {
     throw new Error("Gebruik een geldige magister.net URL.");
   }
+
   return `${url.protocol}//${url.hostname}`;
 }

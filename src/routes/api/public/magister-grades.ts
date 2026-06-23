@@ -152,7 +152,16 @@ function normalizeMagisterBaseUrl(input: unknown) {
   if (typeof input !== "string" || input.trim().length === 0) {
     throw new Error("Magister URL is verplicht.");
   }
-  const url = new URL(input.trim());
+  const trimmed = input.trim();
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  let url: URL;
+  try {
+    url = new URL(withProtocol);
+  } catch {
+    throw new Error(
+      "Gebruik een geldige Magister URL, bijvoorbeeld https://jouwschool.magister.net.",
+    );
+  }
   if (url.protocol !== "https:") throw new Error("Magister URL moet HTTPS gebruiken.");
   if (url.hostname !== "magister.net" && !url.hostname.endsWith(".magister.net")) {
     throw new Error("Gebruik een geldige magister.net URL.");
