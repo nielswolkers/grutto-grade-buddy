@@ -28,6 +28,15 @@ export function listenForMagisterConnector(
   return () => window.removeEventListener("message", handleMessage);
 }
 
+export function parseMagisterConnectorJson(value: string): MagisterGrade[] {
+  const parsed = JSON.parse(value);
+  const grades = Array.isArray(parsed) ? parsed : parsed?.grades;
+  if (!Array.isArray(grades)) {
+    throw new Error("De geplakte tekst bevat geen Magister cijfers.");
+  }
+  return grades as MagisterGrade[];
+}
+
 export function createMagisterConnectorBookmarklet(
   appOrigin: string = typeof window !== "undefined" ? window.location.origin : "",
 ) {
